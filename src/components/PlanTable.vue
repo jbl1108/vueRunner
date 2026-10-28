@@ -15,14 +15,17 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="week in weeks" :key="week">
+        <tr v-for="week in maxWeek" :key="week">
           <td>{{ week }}</td>
-          <td v-for="day in days" :key="day">
-            <input
-              type="text"
-              v-model="schedule[week][day]"
-              placeholder="Indtast aktivitet"
-            />
+          <td v-for="day in 7" :key="day">
+            <template v-if="getActivity(week, day)">
+              <span :class="{ done: getActivity(week, day)!.done }">
+                {{ getActivity(week, day)!.activity }}
+              </span>
+            </template>
+            <template v-else>
+              <span>-</span>
+            </template>
           </td>
         </tr>
       </tbody>
@@ -31,31 +34,41 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent } from 'vue'
 
-type Day = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
-
-interface WeekSchedule {
-  [key: number]: Record<Day, string>;
+interface TrainingActivity {
+  uid: string
+  week: number
+  dayofweek: number
+  activity: string
+  done: boolean
 }
 
 export default defineComponent({
   data() {
-    const days: Day[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    const weeks: number[] = Array.from({ length: 52 }, (_, i) => i + 1);
-
-    const schedule: WeekSchedule = {};
-    weeks.forEach((week) => {
-      schedule[week] = { monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' };
-    });
-
     return {
-      days,
-      weeks,
-      schedule,
-    };
+      activities: [] as TrainingActivity[],
+      maxWeek: 0,
+    }
   },
-});
+  async created() {
+    await this.fetchActivities()
+  },
+  methods: {
+    async fetchActivities() {
+      try {
+        const response = await fetch('http://localhost/training/')
+        this.activities = await response.json()
+        this.maxWeek = Math.max(...this.activities.map((a) => a.week), 1)
+      } catch (error) {
+        console.error('Error fetching activities:', error)
+      }
+    },
+    getActivity(week: number, day: number): TrainingActivity | null {
+      return this.activities.find((a) => a.week === week && a.dayofweek === day) || null
+    },
+  },
+})
 </script>
 
 <style scoped>
@@ -64,7 +77,8 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   border: 1px solid #ddd;
   padding: 8px;
   text-align: center;
@@ -75,9 +89,8 @@ th {
   color: black;
 }
 
-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 5px;
+.done {
+  text-decoration: line-through;
+  color: #888;
 }
 </style>
