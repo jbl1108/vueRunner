@@ -35,6 +35,24 @@ npm install
 npm run dev
 ```
 
+### Run with Docker
+
+Build the image from the VueRunner directory:
+
+```sh
+docker build -t vuerunner .
+```
+
+Start the app on port 8080. Nginx serves the frontend and proxies `/api/` requests to goRunner:
+
+```sh
+docker run --rm -p 8080:80 \
+  -e GORUNNER_API_URL=http://192.168.86.13:9092 \
+  vuerunner
+```
+
+Open http://localhost:8080. Set `GORUNNER_API_URL` to the reachable goRunner base URL when deploying in a different environment.
+
 ### Type-Check, Compile and Minify for Production
 
 ```sh
